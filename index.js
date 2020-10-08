@@ -14,8 +14,62 @@ module.exports.clear = async () => {
     await db.write([])
 }
 
-module.exports.showAll = async () => {
-    const list = await db.read()
+function askForCreateTasks(list) {
+    inquirer.prompt({
+        type: 'input',
+        name: 'title',
+        message: '输入标题',
+    }).then((answer4) => {
+        list.push({ title: answer4.title, done: false })
+        db.write(list)
+    });
+}
+function markAsDone(list, index) {
+    list[index].done = true
+    db.write(list)
+}
+function markAsUndone(list, index) {
+    list[index].done = false
+    db.write(list)
+}
+function update(list, index) {
+    inquirer.prompt({
+        type: 'input',
+        name: 'title',
+        message: '新的标题',
+        default: list[index].title
+    }).then((answer3) => {
+        list[index].title = answer3.title;
+        db.write(list)
+    });
+}
+function remove(list, index) {
+    list.splice(index, 1)
+    db.write(list)
+}
+function askForAction(list, index) {
+    const actions = {
+        markAsDone,
+        markAsUndone,
+        update,
+        remove
+    }
+    inquirer.prompt({
+        type: 'list', name: 'action',
+        message: '请选择操作',
+        choices: [
+            { name: '退出', value: 'quit' },
+            { name: '已完成', value: 'markAsDone' },
+            { name: '未完成', value: 'markAsUndone' },
+            { name: '改标题', value: 'update' },
+            { name: '删除', value: 'remove' }
+        ]
+    }).then((answer2) => {
+        const action = actions[answer2.action]
+        action && action(list, index)
+    })
+}
+function printTasks(list) {
     inquirer
         .prompt(
             {
@@ -30,53 +84,14 @@ module.exports.showAll = async () => {
         .then((answer) => {
             const index = parseInt(answer.index)
             if (index >= 0) {
-                inquirer.prompt({
-                    type: 'list', name: 'action',
-                    message: '请选择操作',
-                    choices: [
-                        { name: '退出', value: 'quit' },
-                        { name: '已完成', value: 'markAsDone' },
-                        { name: '未完成', value: 'markAsUndone' },
-                        { name: '改标题', value: 'update' },
-                        { name: '删除', value: 'remove' }
-                    ]
-                }).then((answer2) => {
-                    switch (answer2.action) {
-                        case 'markAsDone':
-                            list[index].done = true
-                            db.write(list)
-                            break;
-                        case 'markAsUndone':
-                            list[index].done = false
-                            db.write(list)
-                            break;
-                        case 'update':
-                            inquirer.prompt({
-                                type: 'input',
-                                name: 'title',
-                                message: '新的标题',
-                                default: list[index].title
-                            }).then((answer3) => {
-                                list[index].title = answer3.title;
-                                db.write(list)
-                            });
-                            break;
-                        case 'remove':
-                            list.splice(index, 1)
-                            db.write(list)
-                            break;
-
-                    }
-                })
+                askForAction(list, index)
             } else if (index === -2) {
-                inquirer.prompt({
-                    type: 'input',
-                    name: 'title',
-                    message: '输入标题',
-                }).then((answer4) => {
-                    list.push({ title: answer4.title, done: false })
-                    db.write(list)
-                });
+                askForCreateTasks(list)
             };
         });
+}
+
+module.exports.showAll = async () => {
+    const list = await db.read()
+    printTasks(list)
 }

@@ -1,5 +1,11 @@
 {
-  "name": "node-todo",
+  "name": "node-todo-freddy",
+  "bin": {
+    "t": "cli.js"
+  },
+  "files": [
+    "*.js"
+  ],
   "version": "0.0.1",
   "main": "index.js",
   "license": "MIT",
